@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart School Timetable Generator</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg: #0f1420; --bg2: #161d2d; --card: #1b2434; --line: #2a3548;
+--txt: #e8eefc; --mut: #93a1bb; --acc: #3d8bfd; --acc2: #1f6feb;
+--ok: #2ecc8f; --warn: #f0a92b; --bad: #ff5c6c;}
+*{box-sizing: border-box; -webkit-tap-highlight-color: transparent;}
+html,body{margin: 0; padding: 0; height: 100%;}
+body{background: #0f1420; color: var(--txt); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.45; overflow-x: hidden;}
+#app{display: flex; min-height: 100vh;}
+#side{width: 234px; flex: 0 0 234px; background: var(--bg2); border-right: 1px solid var(--line); padding: 16px 12px; position: sticky; top: 0; height: 100vh; overflow-y: auto;}
+.brand{display: flex; align-items: center; gap: 10px; padding: 6px 8px 16px 8px;}
+.logo{width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(135deg, #3d8bfd, #7b5cff); display: flex; align-items: center; justify-content: center; font-size: 19px; flex: 0 0 38px;}
+.brand b{display: block; font-size: 14px;}
+.brand small{display: block; color: var(--mut); font-size: 11px;}
+.navi{display: flex; flex-direction: column; gap: 3px;}
+.navi a{display: flex; align-items: center; gap: 10px; padding: 10px 11px; border-radius: 10px; color: var(--mut); text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer;}
+.navi a:hover{background: #202a3d; color: var(--txt);}
+.navi a.on{background: linear-gradient(90deg, #22406e, #1d3054); color: #fff; box-shadow: inset 0 0 0 1px #2f5590;}
+.navi a .badge{margin-left: auto; background: var(--bad); color: #fff; font-size: 11px; padding: 1px 7px; border-radius: 20px; font-weight: 700;}
+#main{flex: 1; min-width: 0; padding: 18px 22px 90px 22px;}
+.topline{display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px;}
+.topline h1{font-size: 20px; margin: 0; font-weight: 650;}
+.topline .sub{color: var(--mut); font-size: 13px;}
+.spacer{flex: 1;}
+.card{background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 16px;}
+.card h2{font-size: 15px; margin: 0 0 12px 0; font-weight: 650;}
+.card h2 span{color: var(--mut); font-weight: 400; font-size: 12px; margin-left: 6px;}
+.kpis{display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 12px; margin-bottom: 16px;}
+.kpi{background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px;}
+.kpi .v{font-size: 25px; font-weight: 700;}
+.kpi .l{color: var(--mut); font-size: 12px; margin-top: 2px;}
+.kpi.bad .v{color: var(--bad);} .kpi.ok .v{color: var(--ok);}
+button{font-family: inherit; font-size: 14px; font-weight: 600; padding: 9px 15px; border-radius: 10px; border: 1px solid var(--line); background: #243149; color: var(--txt); cursor: pointer; display: inline-flex; align-items: center; gap: 7px;}
+button:hover{background: #2c3b58;}
+button.primary{background: linear-gradient(135deg, #3d8bfd, #2f6fe0); border-color: #3d8bfd; color: #fff;}
+button.ghost{background: transparent;}
+button.bad{background: #3a2028; border-color: #5c2b36; color: #ff8b96;}
+button.sm{padding: 5px 10px; font-size: 12.5px; border-radius: 8px;}
+button:disabled{opacity: .5; cursor: not-allowed;}
+input,select,textarea{font-family: inherit; font-size: 14px; background: #131a29; color: var(--txt); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; width: 100%; outline: none;}
+input:focus,select:focus,textarea:focus{border-color: var(--acc);}
+label.f{display: block; margin-bottom: 11px;}
+label.f>span{display: block; font-size: 12px; color: var(--mut); margin-bottom: 5px; font-weight: 600;}
+.row{display: grid; grid-template-columns: 1fr 1fr; gap: 12px;}
+.row3{display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;}
+table{width: 100%; border-collapse: collapse; font-size: 13.5px;}
+th{text-align: left; color: var(--mut); font-size: 11.5px; text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--line); font-weight: 700;}
+td{padding: 9px 10px; border-bottom: 1px solid #212b3d; vertical-align: middle;}
+tr:last-child td{border-bottom: none;}
+tbody tr:hover{background: #1f2839;}
+.tblwrap{overflow-x: auto;}
+.pill{display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 700; background: #243044; color: #9fb0cc;}
+.pill.owner{background: #3a2f14; color: #f0c04b;}
+.pill.admin{background: #16304f; color: #69a8ff;}
+.pill.ok{background: #12362a; color: #4fe0a8;}
+.pill.bad{background: #3a1f26; color: #ff8b96;}
+.muted{color: var(--mut);}
+.empty{color: var(--mut); text-align: center; padding: 26px 10px; font-size: 13.5px;}
+#modal{position: fixed; inset: 0; background: rgba(6,9,16,.74); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 80;}
+#modal.on{display: flex;}
+.sheet{background: var(--card); border: 1px solid var(--line); border-radius: 16px; width: 100%; max-width: 540px; max-height: 88vh; overflow-y: auto; padding: 18px;}
+.sheet h3{margin: 0 0 14px 0; font-size: 16px;}
+.sheet .acts{display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap;}
+#toast{position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(140%); background: #22303f; border: 1px solid var(--line); color: #fff; padding: 11px 18px; border-radius: 12px; font-size: 13.5px; z-index: 120; max-width: 92vw;}
+#toast.on{transform: translateX(-50%) translateY(0);}
+#toast.err{background: #43202a; border-color: #6b2b38;}
+#toast.ok{background: #14382c; border-color: #215f48;}
+#login{min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 18px; display: none;}
+#login .box{width: 100%; max-width: 400px;}
+#login .logo{margin: 0 auto 14px auto;}
+#login h1{text-align: center; font-size: 21px; margin: 0 0 4px 0;}
+#login p.sub{text-align: center; color: var(--mut); font-size: 13px; margin: 0 0 20px 0;}
+.tt{width: 100%; border-collapse: separate; border-spacing: 4px; font-size: 12.5px;}
+.tt th{background: #212c40; border-radius: 8px; padding: 7px 4px; text-align: center; color: var(--mut); font-size: 11px; text-transform: none;}
+.tt th.dh{text-align: left; padding-left: 9px; min-width: 74px;}
+.tt td{padding: 0; border: none;}
+.slot{min-height: 56px; border-radius: 9px; background: #141c2b; border: 1px dashed #2a3548; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 5px 7px; cursor: pointer;}
+.slot:hover{border-color: var(--acc); background: #182233;}
+.slot.full{background: #1d2c47; border: 1px solid #2f5590;}
+.slot b{font-size: 12px; font-weight: 650; line-height: 1.25;}
+.slot small{font-size: 10.5px; color: var(--mut); line-height: 1.3;}
+.slot .plus{color: #3f4f68; font-size: 16px; text-align: center;}
+.legend{display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--mut); margin-top: 10px;}
+.tabs{display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px;}
+.tabs button{padding: 7px 13px; font-size: 13px; border-radius: 9px; background: #1c2637;}
+.tabs button.on{background: var(--acc2); border-color: var(--acc); color: #fff;}
+.chip{display: inline-flex; align-items: center; gap: 6px; background: #212c40; border: 1px solid var(--line); border-radius: 20px; padding: 4px 6px 4px 11px; font-size: 12.5px; margin: 0 6px 6px 0;}
+.chip span.x{cursor: pointer; color: var(--mut); padding: 0 5px; font-weight: 700;}
+.chip span.x:hover{color: var(--bad);}
+.cur{border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 12px; background: #151d2b;}
+.curline{display: grid; grid-template-columns: 1.4fr 1.2fr .9fr 70px 34px; gap: 7px; margin-bottom: 7px; align-items: center;}
+.curline select,.curline input{padding: 6px 8px; font-size: 12.5px;}
+.note{background: #16233a; border-left: 3px solid var(--acc); padding: 10px 13px; border-radius: 8px; font-size: 12.5px; color: #b9c7de; margin-bottom: 14px;}
+.warnbox{background: #3a2f14; border-left: 3px solid var(--warn); color: #f2cf8d; padding: 10px 13px; border-radius: 8px; font-size: 12.5px; margin-bottom: 12px;}
+.errbox{background: #3a1f26; border-left: 3px solid var(--bad); color: #ffb3bb; padding: 10px 13px; border-radius: 8px; font-size: 12.5px; margin-bottom: 12px;}
+.chk{display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 7px; background: #151d2b;}
+.chk input{width: auto;}
+.hero{background: linear-gradient(135deg, #1d2c47, #1b2434); border: 1px solid #2f5590; border-radius: 16px; padding: 18px; margin-bottom: 16px;}
+.hero .hi{display: flex; align-items: center; gap: 14px; flex-wrap: wrap;}
+.hero h1{font-size: 20px; margin: 0 0 3px 0; font-weight: 700;}
+.hero .sub{color: #b9c7de; font-size: 13px;}
+.logo{overflow: hidden;}
+.logo img{width: 100%; height: 100%; object-fit: cover; border-radius: inherit;}
+.logo.big{width: 56px; height: 56px; flex: 0 0 56px; border-radius: 15px; font-size: 26px;}
+.steps{display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;}
+.step{display: flex; align-items: center; gap: 11px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; background: #151d2b; cursor: pointer;}
+.step:hover{border-color: #2f5590;}
+.step .sn{width: 26px; height: 26px; flex: 0 0 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; background: #243149; color: #9fb0cc;}
+.step.done .sn{background: #14382c; color: #4fe0a8;}
+.step b{display: block; font-size: 13.5px;}
+.step small{display: block; color: var(--mut); font-size: 11.5px;}
+.spinner{width: 26px; height: 26px; border: 3px solid #2a3548; border-top-color: var(--acc); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto;}
+@keyframes spin{to{transform: rotate(360deg);}}
+#splash{position: fixed; inset: 0; background: rgba(6,9,16,.72); z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 12px; font-size: 13.5px; color: #dfe8f8;}
+#splash.on{display: flex;}
+#mnav{display: none;}
+.statline{display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;}
+@media(max-width: 880px){
+#app{flex-direction: column;}
+#side{width: 100%; flex: none; height: auto; position: sticky; top: 0; z-index: 50; border-right: none; border-bottom: 1px solid var(--line); padding: 8px 10px; background: var(--bg2);}
+.brand{padding: 0;}
+.brand small{display: none;}
+.navi{display: none;}
+#main{padding: 12px 12px 96px 12px;}
+.hero{padding: 14px;}
+.hero h1{font-size: 17px;}
+.logo.big{width: 46px; height: 46px; flex: 0 0 46px; font-size: 22px; border-radius: 13px;}
+#mnav{display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; background: #161d2d; border-top: 1px solid var(--line); padding: 5px 4px calc(5px + env(safe-area-inset-bottom)) 4px;}
+#mnav .mb{flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; color: var(--mut); font-size: 10.5px; font-weight: 600; background: none; border: none; cursor: pointer;}
+.navi a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.step:focus-visible,.kpi:focus-visible{outline: 2px solid var(--acc); outline-offset: 2px;}
+.kpi[data-go2],.step[data-go3]{transition: border-color .15s, background .15s;}
+#mnav .mb .mi{font-size: 17px; line-height: 1;}
+#mnav .mb.on{color: #fff; background: #1d3054;}
+#mnav .mb .dot{position: absolute; margin: -3px 0 0 16px; width: 7px; height: 7px; border-radius: 50%; background: var(--bad);}
+.row,.row3{grid-template-columns: 1fr;}
+.curline{grid-template-columns: 1fr 1fr; gap: 6px;}
+.slot{min-height: 48px; padding: 4px 5px;}
+.slot b{font-size: 11px;} .slot small{font-size: 9.5px;}
+.tt th.dh{min-width: 52px; font-size: 10px;}
+}
+@media(max-width: 520px){
+.kpis{grid-template-columns: 1fr 1fr; gap: 9px;}
+.kpi .v{font-size: 21px;}
+.kpi{padding: 11px;}
+.card{padding: 13px;}
+.topline h1{font-size: 18px;}
+.hero .acts{width: 100%;}
+}
+</style>
+</head>
+<body>
+
+<div id="login"><div class="box">
+  <div class="logo">&#128197;</div>
+  <h1>Smart School Timetable</h1>
+  <p class="sub" id="loginSub">Sign in to continue</p>
+  <div class="card">
+    <div id="loginErr"></div>
+    <label class="f" id="wrapName" style="display:none"><span>Your name</span><input id="inName" placeholder="e.g. Principal Sara"></label>
+    <label class="f"><span>Username</span><input id="inUser" placeholder="username" autocomplete="username"></label>
+    <label class="f"><span>Password</span><input id="inPass" type="password" placeholder="password" autocomplete="current-password"></label>
+    <label class="f" id="wrapKey" style="display:none"><span>Setup key</span><input id="inKey" placeholder="from the bot owner"></label>
+    <button class="primary" style="width:100%;justify-content:center" id="btnAuth">Sign in</button>
+    <div style="text-align:center;margin-top:10px" id="authSwap"></div>
+    <div style="margin-top:14px;border-top:1px solid #2a3548;padding-top:12px">
+      <button class="sm ghost" id="btnAdv" style="width:100%;justify-content:center">Advanced: API endpoint</button>
+      <div id="advBox" style="display:none;margin-top:10px">
+        <label class="f"><span>API endpoint URL</span><input id="inApi" placeholder="https://..."></label>
+        <button class="sm" id="btnApiSave">Save endpoint</button>
+      </div>
+    </div>
+  </div>
+  <p class="muted" style="text-align:center;font-size:12px">All data is stored in your Telegram bot's database.</p>
+</div></div>
+<div id="app" style="display:none">
+  <aside id="side">
+    <div class="brand"><div class="logo">&#128197;</div><div><b id="brandName">My School</b><small id="brandUser">signed in</small></div></div>
+    <nav class="navi" id="nav"></nav>
+  </aside>
+  <main id="main"></main>
+</div>
+<nav id="mnav"></nav>
+<div id="modal"><div class="sheet" id="sheet"></div></div>
+<div id="toast"></div>
+<div id="splash"><div class="spinner"></div><div>Working...</div></div>
+
+<script>
+var API = localStorage.getItem("tt_api") || "https://api.telebotcreator.com/new-webhook?data=gAAAAABq48dAu458RBeAoxQoDRX4z4KVi5suRqocA68ulB97pe0bRSkd49NbRUy8L4SNmgdPZNi9vR-fVq_xIXjWrwUajojcDIUXLc5oXq5hy47UmNPnifQ6jSq9y3syzelmQWaQtKRBGvdenBkwM1_cR4eHLKotUTC6tbUDPRqh8LIxt8TWLu7eBr-gc4aYDNFautCi_QBV";
+var TOKEN = localStorage.getItem("tt_token") || "";
+var S = {school: {name: "", days: [], periods: []}, teachers: [], subjects: [], rooms: [], classes: [], sections: [], curriculum: {}, timetables: {}, admins: [], me: null, conflicts: []};
+var VIEW = "dash";
+
+function $(id){ return document.getElementById(id); }
+function esc(v){
+  if (v === null || v === undefined) { return ""; }
+  return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function toast(m, kind){
+  var t = $("toast");
+  t.className = "on" + (kind ? " " + kind : "");
+  t.textContent = m;
+  setTimeout(function(){ t.className = ""; }, 3800);
+}
+function api(action, extra){
+  var payload = {action: action, token: TOKEN};
+  if (extra) { for (var k in extra) { payload[k] = extra[k]; } }
+  return fetch(API, {method: "POST", headers: {"Content-Type": "text/plain;charset=UTF-8"}, body: JSON.stringify(payload)})
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      var d = null;
+      try { d = JSON.parse(txt); } catch (e) { d = null; }
+      if (!d) { throw new Error("The API did not return JSON. Check the endpoint URL. " + txt.slice(0, 120)); }
+      if (d.ok === false) { throw new Error(d.error || "Request failed"); }
+      return d;
+    }).catch(function(e){
+      if (e && (e.message === "Failed to fetch" || e.name === "TypeError")) {
+        throw new Error("Could not reach the API. Usually the page and the API are on different hosts and the browser blocked the call (CORS). Check the endpoint under Advanced: API endpoint, or send /api to the bot for the right link.");
+      }
+      throw e;
+    });
+}
+function tById(list, id){
+  for (var i = 0; i < list.length; i++) { if (list[i].id === id) { return list[i]; } }
+  return null;
+}
+function nameOf(list, id){ var r = tById(list, id); return r ? (r.name || r.code || "") : ""; }
+function isWrite(){ return S.me && (S.me.role === "owner" || S.me.role === "admin"); }
+function isOwner(){ return S.me && S.me.role === "owner"; }
+function splash(on){
+  var el = $("splash");
+  if (!el) { return; }
+  el.className = on ? "on" : "";
+}
+function logoSVG(size){
+  var sc = (S.school || {});
+  var em = sc.logo_emoji || "\uD83D\uDCC5";
+  if (sc.logo_img) {
+    return "<div class='logo" + (size === "big" ? " big" : "") + "'><img src='" + esc(sc.logo_img) + "' alt='School logo'></div>";
+  }
+  return "<div class='logo" + (size === "big" ? " big" : "") + "'>" + esc(em) + "</div>";
+}
+function greeting(){
+  var hh = new Date().getHours();
+  if (hh < 12) { return "Good morning"; }
+  if (hh < 18) { return "Good afternoon"; }
+  return "Good evening";
+}
+function refresh(){
+  return api("state").then(function(d){
+    S.school = d.school || S.school;
+    S.teachers = d.teachers || [];
+    S.subjects = d.subjects || [];
+    S.rooms = d.rooms || [];
+    S.classes = d.classes || [];
+    S.sections = d.sections || [];
+    S.curriculum = d.curriculum || {};
+    S.timetables = d.timetables || {};
+    S.admins = d.admins || [];
+    S.me = d.me || S.me;
+    S.conflicts = d.conflicts || [];
+    var bn = $("brandName");
+    if (bn && bn.parentNode && bn.parentNode.parentNode) {
+      var brandBox = bn.parentNode.parentNode;
+      var sig = String((S.school || {}).logo_img || "") + String((S.school || {}).logo_emoji || "");
+      if (brandBox.getAttribute("data-logo") !== sig) {
+        brandBox.setAttribute("data-logo", sig);
+        var oldLogo = brandBox.querySelector(".logo");
+        if (oldLogo) { oldLogo.outerHTML = logoSVG(""); }
+      }
+    }
+    $("brandName").textContent = S.school.name || "My School";
+    $("brandUser").textContent = (S.me ? S.me.name : "") + " - " + (S.me ? S.me.role : "");
+    return d;
+  });
+}
+function fail(e){ toast(e.message || String(e), "err"); }
+
+function showLogin(setup){
+  $("login").style.display = "flex";
+  $("app").style.display = "none";
+  $("wrapName").style.display = setup ? "block" : "none";
+  $("wrapKey").style.display = setup ? "block" : "none";
+  $("loginSub").textContent = setup ? "Create the first administrator" : "Sign in to continue";
+  $("btnAuth").textContent = setup ? "Create administrator" : "Sign in";
+  $("authSwap").innerHTML = "<button class='sm ghost' id='btnSwap'>" + (setup ? "I already have an account" : "First time? Create administrator") + "</button>";
+  $("btnSwap").onclick = function(){ showLogin(!setup); };
+  $("inApi").value = API || "";
+  $("btnAuth").onclick = function(){
+    var u = $("inUser").value.trim();
+    var p = $("inPass").value;
+    $("loginErr").innerHTML = "";
+    if (!u || !p) { $("loginErr").innerHTML = "<div class='errbox'>Enter a username and password.</div>"; return; }
+    if (p.length < 6) { $("loginErr").innerHTML = "<div class='errbox'>The password must be at least 6 characters.</div>"; return; }
+    
+    var extra = {username: u, password: p};
+    if (setup) { extra.name = $("inName").value.trim() || u; extra.setup_key = $("inKey").value.trim(); }
+    $("btnAuth").disabled = true;
+    api(setup ? "setup" : "login", extra).then(function(d){
+      $("btnAuth").disabled = false;
+      TOKEN = d.token;
+      localStorage.setItem("tt_token", TOKEN);
+      $("login").style.display = "none";
+      $("app").style.display = "flex";
+      return refresh().then(function(){ go("dash"); });
+    }).catch(function(e){
+      $("btnAuth").disabled = false;
+      $("loginErr").innerHTML = "<div class='errbox'>" + esc(e.message) + "</div>";
+    });
+  };
+}
+function boot(){
+  if (!API) { showLogin(false); return; }
+  api("session").then(function(d){
+    var setupDone = d.setup_done !== false;
+    if (d.admin) {
+      $("login").style.display = "none";
+      $("app").style.display = "flex";
+      return refresh().then(function(){ go("dash"); });
+    }
+    if (TOKEN) {
+      TOKEN = "";
+      localStorage.removeItem("tt_token");
+    }
+    showLogin(!setupDone);
+  }).catch(function(e){
+    fail(e);
+    showLogin(false);
+  });
+}
+function logout(){
+  api("logout").catch(function(){}).then(function(){
+    TOKEN = "";
+    localStorage.removeItem("tt_token");
+    S.me = null;
+    showLogin(false);
+  });
+}
+
+
+var NAV = [
+  {id: "dash", ic: "\u25A6", label: "Dashboard"},
+  {id: "teachers", ic: "\u263A", label: "Teachers"},
+  {id: "classes", ic: "\u25A4", label: "Classes"},
+  {id: "subjects", ic: "\u2687", label: "Subjects"},
+  {id: "rooms", ic: "\u25A3", label: "Classrooms"},
+  {id: "periods", ic: "\u23F0", label: "Periods"},
+  {id: "curriculum", ic: "\u270E", label: "Curriculum"},
+  {id: "generate", ic: "\u2692", label: "Generate Timetable"},
+  {id: "timetable", ic: "\u25A6", label: "View Timetable"},
+  {id: "export", ic: "\u2913", label: "Export"},
+  {id: "school", ic: "\u2691", label: "Settings"}
+];
+var MNAV = [
+  {id: "dash", ic: "\u25A6", label: "Home"},
+  {id: "teachers", ic: "\u263A", label: "Teachers"},
+  {id: "classes", ic: "\u25A4", label: "Classes"},
+  {id: "timetable", ic: "\u25A6", label: "Timetable"},
+  {id: "menu", ic: "\u2261", label: "More"}
+];
+function drawNav(){
+  var h = "";
+  for (var i = 0; i < NAV.length; i++) {
+    var n = NAV[i];
+    var badge = "";
+    if (n.id === "conflicts" && S.conflicts.length > 0) { badge = "<span class='badge'>" + S.conflicts.length + "</span>"; }
+    h = h + "<a class='" + (VIEW === n.id ? "on" : "") + "' data-go='" + n.id + "'><span class='ic'>" + n.ic + "</span>" + n.label + badge + "</a>";
+  }
+  $("nav").innerHTML = h;
+  var links = $("nav").getElementsByTagName("a");
+  for (var j = 0; j < links.length; j++) {
+    links[j].onclick = function(){ go(this.getAttribute("data-go")); };
+  }
+  var mh = "";
+  var tail = ["subjects", "rooms", "periods", "settings", "curriculum", "generate", "timetable", "conflicts", "export", "school", "admins", "menu"];
+  for (var m = 0; m < MNAV.length; m++) {
+    var mn = MNAV[m];
+    var on = VIEW === mn.id;
+    if (mn.id === "menu") { on = tail.indexOf(VIEW) >= 0; }
+    var dot = (mn.id === "menu" && S.conflicts.length > 0) ? "<span class='dot'></span>" : "";
+    mh = mh + "<button class='mb" + (on ? " on" : "") + "' data-mgo='" + mn.id + "'><span class='mi'>" + mn.ic + "</span>" + dot + mn.label + "</button>";
+  }
+  $("mnav").innerHTML = mh;
+  var mbs = $("mnav").getElementsByTagName("button");
+  for (var k = 0; k < mbs.length; k++) {
+    mbs[k].onclick = function(){
+      var v = this.getAttribute("data-mgo");
+      if (v === "menu") { menuView(); return; }
+      go(v);
+    };
+  }
+}
+function menuView(){
+  VIEW = "menu";
+  drawNav();
+  var items = [
+    {v: "dash", l: "Dashboard", d: "Counts and generation status"},
+    {v: "teachers", l: "Teachers", d: "Staff and their subjects"},
+    {v: "classes", l: "Classes", d: "Classes and sections"},
+    {v: "subjects", l: "Subjects", d: "What is taught"},
+    {v: "rooms", l: "Classrooms", d: "Where lessons happen"},
+    {v: "periods", l: "Periods", d: "School days and the periods of one day"},
+    {v: "curriculum", l: "Curriculum", d: "Periods per week per class"},
+    {v: "generate", l: "Generate timetable", d: "Automatic placement"},
+    {v: "timetable", l: "View timetable", d: "Weekly grid"},
+    {v: "conflicts", l: "Conflicts", d: "Teacher and room clashes"},
+    {v: "export", l: "Export", d: "PDF, Excel, CSV"},
+    {v: "school", l: "Settings", d: "School name, periods, conflicts, administrators"}
+  ];
+  var h = head("All pages", (S.school.name || "My School") + " - signed in as " + ((S.me || {}).name || ""));
+  h = h + "<div class='card'><div class='steps'>";
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i];
+    if (it.v === "admins" && !isOwner()) { continue; }
+    var warn = (it.v === "conflicts" && S.conflicts.length > 0) ? " - " + S.conflicts.length + " found" : "";
+    h = h + "<div class='step' data-go3='" + it.v + "'><div class='sn'>" + (i + 1) + "</div><div><b>" + esc(it.l) + "</b><small>" + esc(it.d) + warn + "</small></div></div>";
+  }
+  h = h + "</div></div>";
+  h = h + "<div class='card'><h2>Account</h2><div class='muted' style='font-size:13px;margin-bottom:10px'>Signed in as " + esc((S.me || {}).name || "") + " (" + esc((S.me || {}).role || "") + ").</div><button class='bad' id='btnOut2'>Sign out</button></div>";
+  $("main").innerHTML = h;
+  var gs = $("main").querySelectorAll("[data-go3]");
+  for (var j = 0; j < gs.length; j++) {
+    gs[j].setAttribute("role", "button");
+    gs[j].setAttribute("tabindex", "0");
+    gs[j].onclick = function(){ go(this.getAttribute("data-go3")); };
+    gs[j].onkeydown = function(ev){ if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(this.getAttribute("data-go3")); } };
+  }
+  $("btnOut2").onclick = logout;
+}
+function go(v){
+  VIEW = v;
+  drawNav();
+  if (v === "dash") { dashView(); }
+  else if (v === "teachers") { entView("teachers"); }
+  else if (v === "classes") { entView("classes"); }
+  else if (v === "subjects") { entView("subjects"); }
+  else if (v === "rooms") { entView("rooms"); }
+  else if (v === "periods") { periodsView(); }
+  else if (v === "settings" || v === "school") { settingsView(); }
+  else if (v === "curriculum") { currView(); }
+  else if (v === "generate") { genView(); }
+  else if (v === "timetable") { ttView(); }
+  else if (v === "conflicts") { confView(); }
+  else if (v === "export") { expView(); }
+  else if (v === "admins") { admView(); }
+  bindTabs();
+}
+function tabsHTML(active){
+  var defs = [{v: "school", l: "School & periods"},
+              {v: "conf", l: "Conflicts" + (S.conflicts.length > 0 ? " (" + S.conflicts.length + ")" : "")}];
+  if (isOwner()) { defs.push({v: "adm", l: "Administrators"}); }
+  var h = "<div class='tabs'>";
+  for (var i = 0; i < defs.length; i++) {
+    h = h + "<button class='" + (active === defs[i].v ? "on" : "") + "' data-tabv='" + defs[i].v + "'>" + esc(defs[i].l) + "</button>";
+  }
+  return h + "</div>";
+}
+function bindTabs(){
+  var bs = $("main").querySelectorAll("[data-tabv]");
+  for (var i = 0; i < bs.length; i++) {
+    bs[i].onclick = function(){
+      var v = this.getAttribute("data-tabv");
+      if (v === "conf") { go("conflicts"); }
+      else if (v === "adm") { go("admins"); }
+      else { go("settings"); }
+    };
+  }
+}
+function head(title, sub, right){
+  return "<div class='topline'><div><h1>" + esc(title) + "</h1><div class='sub'>" + esc(sub || "") + "</div></div><div class='spacer'></div>" + (right || "") + "</div>";
+}
+function modal(title, bodyHTML, onOk, okLabel){
+  $("sheet").innerHTML = "<h3>" + esc(title) + "</h3><div id='mBody'>" + bodyHTML + "</div><div class='acts'><button class='ghost' id='mCancel'>Cancel</button><button class='primary' id='mOk'>" + esc(okLabel || "Save") + "</button></div>";
+  $("modal").className = "on";
+  $("mCancel").onclick = closeModal;
+  $("mOk").onclick = function(){
+    $("mOk").disabled = true;
+    onOk(function(){ $("mOk").disabled = false; });
+  };
+}
+function closeModal(){ $("modal").className = ""; $("sheet").innerHTML = ""; }
+
+var FIELDS = {
+  teachers: [
+    {k: "name", l: "Full name", t: "text", req: 1},
+    {k: "code", l: "Short code", t: "text"},
+    {k: "email", l: "Email", t: "text"},
+    {k: "phone", l: "Phone", t: "text"},
+    {k: "max_per_day", l: "Max periods per day (0 = no limit)", t: "number"},
+    {k: "subject_ids", l: "Subjects", t: "multi", src: "subjects"}
+  ],
+  subjects: [
+    {k: "name", l: "Subject name", t: "text", req: 1},
+    {k: "code", l: "Short code", t: "text"},
+    {k: "color", l: "Colour (e.g. #3d8bfd)", t: "text"}
+  ],
+  rooms: [
+    {k: "name", l: "Room name", t: "text", req: 1},
+    {k: "code", l: "Short code", t: "text"},
+    {k: "capacity", l: "Capacity", t: "number"},
+    {k: "kind", l: "Type (classroom, lab, hall)", t: "text"}
+  ],
+  classes: [
+    {k: "name", l: "Class name", t: "text", req: 1},
+    {k: "code", l: "Short code", t: "text"}
+  ],
+  sections: [
+    {k: "name", l: "Section name", t: "text", req: 1},
+    {k: "class_id", l: "Class", t: "select", src: "classes", req: 1},
+    {k: "students", l: "Number of students", t: "number"},
+    {k: "room_id", l: "Home classroom", t: "select", src: "rooms"}
+  ]
+};
+function fieldHTML(f, val){
+  var v = (val === undefined || val === null) ? "" : val;
+  if (f.t === "multi") {
+    var src = S[f.src] || [];
+    var chosen = Array.isArray(v) ? v : [];
+    var h = "<div class='f'><span style='display:block;font-size:12px;color:#93a1bb;margin-bottom:5px;font-weight:600'>" + esc(f.l) + "</span>";
+    if (src.length === 0) { h = h + "<div class='muted' style='font-size:12.5px'>No subjects yet - add subjects first.</div>"; }
+    for (var i = 0; i < src.length; i++) {
+      var on = chosen.indexOf(src[i].id) >= 0 ? " checked" : "";
+      h = h + "<label class='chk'><input type='checkbox' data-multi='" + f.k + "' value='" + esc(src[i].id) + "'" + on + "><span>" + esc(src[i].name) + "</span></label>";
+    }
+    return h + "</div>";
+  }
+  if (f.t === "select") {
+    var opts = "<option value=''>- none -</option>";
+    var list = S[f.src] || [];
+    for (var j = 0; j < list.length; j++) {
+      var sel = (list[j].id === v) ? " selected" : "";
+      opts = opts + "<option value='" + esc(list[j].id) + "'" + sel + ">" + esc(list[j].name) + "</option>";
+    }
+    return "<label class='f'><span>" + esc(f.l) + "</span><select data-f='" + f.k + "'>" + opts + "</select></label>";
+  }
+  return "<label class='f'><span>" + esc(f.l) + "</span><input data-f='" + f.k + "' type='" + f.t + "' value='" + esc(v) + "'></label>";
+}
+function readForm(){
+  var out = {};
+  var ins = $("mBody").querySelectorAll("[data-f]");
+  for (var i = 0; i < ins.length; i++) { out[ins[i].getAttribute("data-f")] = ins[i].value; }
+  var ms = $("mBody").querySelectorAll("[data-multi]");
+  for (var j = 0; j < ms.length; j++) {
+    var k = ms[j].getAttribute("data-multi");
+    if (!out[k]) { out[k] = []; }
+    if (ms[j].checked) { out[k].push(ms[j].value); }
+  }
+  return out;
+}
+function entForm(entity, row){
+  var f = FIELDS[entity];
+  var h = "";
+  for (var i = 0; i < f.length; i++) {
+    h = h + fieldHTML(f[i], row ? row[f[i].k] : "");
+  }
+  if (entity === "classes") {
+    h = h + "<div class='note'>Sections and their timetables are managed inside the Classes screen.</div>";
+  }
+  return h;
+}
+function saveEntity(entity, row){
+  modal(row ? "Edit " + entity.slice(0, -1) : "New " + entity.slice(0, -1), entForm(entity, row), function(done){
+    var data = readForm();
+    if (row) { data.id = row.id; }
+    api(row ? "entity.update" : "entity.create", {entity: entity, data: data}).then(function(){
+      closeModal();
+      toast("Saved", "ok");
+      refresh().then(function(){ go(VIEW); });
+    }).catch(function(e){ done(); fail(e); });
+  });
+}
+function delEntity(entity, row){
+  modal("Delete", "<div class='errbox'>Delete " + esc(row.name) + "? Linked timetable entries are removed too.</div>", function(done){
+    api("entity.delete", {entity: entity, id: row.id}).then(function(){
+      closeModal();
+      toast("Deleted", "ok");
+      refresh().then(function(){ go(VIEW); });
+    }).catch(function(e){ done(); fail(e); });
+  }, "Delete");
+}
+function addTitle(entity){
+  if (entity === "teachers") { return head("Teachers", "Staff who can be assigned to periods"); }
+  if (entity === "classes") { return head("Classes & sections", "Every class with its sections"); }
+  if (entity === "subjects") { return head("Subjects", "What is taught"); }
+  if (entity === "rooms") { return head("Classrooms", "Where lessons happen"); }
+  return head(entity, "");
+}
+function entView(entity){
+  if (entity === "classes") { classesView(); return; }
+  var rows = S[entity] || [];
+  var listName = {"teachers": "teachers", "subjects": "subjects", "rooms": "rooms"}[entity];
+  var right = isWrite() ? "<button class='primary' id='btnNew'>+ Add</button>" : "";
+  var h = addTitle(entity) + "<div class='card'>";
+  h = h + "<h2>" + rows.length + " " + listName + "</h2>";
+  if (rows.length === 0) {
+    h = h + "<div class='empty'>Nothing here yet. " + (isWrite() ? "Use + Add to create the first one." : "") + "</div>";
+  } else {
+    h = h + "<div class='tblwrap'><table><thead><tr><th>Name</th>";
+    if (entity === "teachers") { h = h + "<th>Code</th><th>Subjects</th><th>Max/day</th>"; }
+    if (entity === "subjects") { h = h + "<th>Code</th>"; }
+    if (entity === "rooms") { h = h + "<th>Type</th><th>Capacity</th>"; }
+    h = h + "<th></th></tr></thead><tbody>";
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      h = h + "<tr><td><b>" + esc(r.name) + "</b></td>";
+      if (entity === "teachers") {
+        var subs = [];
+        var ids = r.subject_ids || [];
+        for (var k = 0; k < ids.length; k++) { subs.push(nameOf(S.subjects, ids[k])); }
+        h = h + "<td class='muted'>" + esc(r.code || "") + "</td><td class='muted'>" + esc(subs.join(", ")) + "</td><td class='muted'>" + esc(r.max_per_day || "-") + "</td>";
+      }
+      if (entity === "subjects") { h = h + "<td class='muted'>" + esc(r.code || "") + "</td>"; }
+      if (entity === "rooms") { h = h + "<td class='muted'>" + esc(r.kind || "") + "</td><td class='muted'>" + esc(r.capacity || "") + "</td>"; }
+      h = h + "<td style='text-align:right'>";
+      if (isWrite()) {
+        h = h + "<button class='sm' data-edit='" + i + "'>Edit</button> <button class='sm bad' data-del='" + i + "'>Delete</button>";
+      }
+      h = h + "</td></tr>";
+    }
+    h = h + "</tbody></table></div>";
+  }
+  h = h + "</div>";
+  $("main").innerHTML = h;
+  if ($("btnNew")) { $("btnNew").onclick = function(){ saveEntity(entity, null); }; }
+  bindRows(entity, rows);
+}
+function bindRows(entity, rows){
+  var es = $("main").querySelectorAll("[data-edit]");
+  for (var i = 0; i < es.length; i++) {
+    es[i].onclick = function(){ saveEntity(entity, rows[parseInt(this.getAttribute("data-edit"), 10)]); };
+  }
+  var ds = $("main").querySelectorAll("[data-del]");
+  for (var j = 0; j < ds.length; j++) {
+    ds[j].onclick = function(){ delEntity(entity, rows[parseInt(this.getAttribute("data-del"), 10)]); };
+  }
+}
+
+
+function dashView(){
+  var nd = (S.school.days || []).length;
+  var np = (S.school.periods || []).length;
+  var weekly = nd * np;
+  var nSections = (S.sections || []).length;
+  var filled = 0;
+  var done = 0;
+  for (var i = 0; i < nSections; i++) {
+    var tb = S.timetables[S.sections[i].id] || {};
+    var n = 0;
+    for (var k in tb) { if (tb[k] && tb[k].subject_id) { n = n + 1; } }
+    filled = filled + n;
+    if (n > 0) { done = done + 1; }
+  }
+  var slots = nSections * weekly;
+  var pct = slots > 0 ? Math.round((filled / slots) * 100) : 0;
+  var state = "";
+  var stateCls = "";
+  if (nSections === 0) {
+    state = "Not started - add classes and sections";
+    stateCls = "";
+  } else if (filled === 0) {
+    state = "Not generated yet";
+    stateCls = "";
+  } else if (done < nSections) {
+    state = "Partly generated - " + done + " of " + nSections + " sections have lessons";
+    stateCls = "admin";
+  } else if (S.conflicts.length > 0) {
+    state = "Generated, but " + S.conflicts.length + " conflict(s) need fixing";
+    stateCls = "bad";
+  } else {
+    state = "Generated - every section is filled, no conflicts";
+    stateCls = "ok";
+  }
+  var who = "";
+  try { who = (S.me || {}).name || ""; } catch (e) { who = ""; }
+  var h = "";
+  h = h + "<div class='hero'><div class='hi'>" + logoSVG("big") + "<div style='min-width:0'><h1>" + esc(S.school.name || "My School") + "</h1><div class='sub'>" + esc(greeting()) + (who ? ", " + esc(who) : "") + " - " + esc((S.me || {}).role || "") + "</div></div></div>";
+  h = h + "<div class='acts' style='display:flex;gap:8px;flex-wrap:wrap;margin-top:14px'>";
+  h = h + "<button class='primary' id='btnQuickGen'>Generate timetable</button>";
+  h = h + "<button id='btnQuickView'>View timetable</button>";
+  if (isWrite()) { h = h + "<button class='ghost' id='btnQuickSet'>School settings</button>"; }
+  h = h + "</div>";
+  h = h + "<div class='statline'><span class='pill'>" + nd + " school days</span><span class='pill'>" + np + " periods a day</span><span class='pill'>" + weekly + " slots per section</span></div>";
+  h = h + "</div>";
+  h = h + "<div class='card'><h2>Timetable generation status</h2>";
+  h = h + "<div style='display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px'><span class='pill " + esc(stateCls) + "'>" + esc(state) + "</span><span class='muted' style='font-size:12.5px'>" + filled + " lessons scheduled of " + slots + " possible</span></div>";
+  h = h + "<div style='height:9px;background:#131a29;border-radius:20px;overflow:hidden'><div style='height:100%;width:" + pct + "%;background:linear-gradient(90deg,#3d8bfd,#2ecc8f)'></div></div>";
+  h = h + "<div class='muted' style='font-size:12px;margin-top:6px'>" + pct + "% of all section slots are filled</div></div>";
+  h = h + "<div class='kpis'>";
+  h = h + "<div class='kpi' data-go2='teachers' style='cursor:pointer'><div class='v'>" + (S.teachers || []).length + "</div><div class='l'>Teachers</div></div>";
+  h = h + "<div class='kpi' data-go2='classes' style='cursor:pointer'><div class='v'>" + (S.classes || []).length + "</div><div class='l'>Classes" + (nSections > 0 ? " (" + nSections + " sections)" : "") + "</div></div>";
+  h = h + "<div class='kpi' data-go2='subjects' style='cursor:pointer'><div class='v'>" + (S.subjects || []).length + "</div><div class='l'>Subjects</div></div>";
+  h = h + "<div class='kpi' data-go2='rooms' style='cursor:pointer'><div class='v'>" + (S.rooms || []).length + "</div><div class='l'>Classrooms</div></div>";
+  h = h + "<div class='kpi ok' data-go2='timetable' style='cursor:pointer'><div class='v'>" + filled + "</div><div class='l'>Scheduled lessons</div></div>";
+  h = h + "<div class='kpi " + (S.conflicts.length > 0 ? "bad" : "ok") + "' data-go2='conflicts' style='cursor:pointer'><div class='v'>" + S.conflicts.length + "</div><div class='l'>Conflicts</div></div>";
+  h = h + "</div>";
+  h = h + "<div class='card'><h2>Setup progress<span>" + done + " of " + (S.sections || []).length + " sections have a timetable</span></h2>";
+  var steps = [
+    {t: "School days and periods", ok: (S.school.days || []).length > 0 && (S.school.periods || []).length > 0, v: "periods"},
+    {t: "Subjects", ok: (S.subjects || []).length > 0, v: "subjects"},
+    {t: "Teachers", ok: (S.teachers || []).length > 0, v: "teachers"},
+    {t: "Classrooms", ok: (S.rooms || []).length > 0, v: "rooms"},
+    {t: "Classes and sections", ok: (S.sections || []).length > 0, v: "classes"},
+    {t: "Curriculum (periods per week)", ok: Object.keys(S.curriculum || {}).length > 0, v: "curriculum"},
+    {t: "Generate and edit the timetable", ok: done > 0, v: "generate"}
+  ];
+  h = h + "<div class='tblwrap'><table><tbody>";
+  for (var s = 0; s < steps.length; s++) {
+    var st = steps[s];
+    h = h + "<tr><td style='width:34px'>" + (st.ok ? "<span class='pill ok'>done</span>" : "<span class='pill'>todo</span>") + "</td><td>" + esc(st.t) + "</td><td style='text-align:right'><button class='sm' data-go2='" + st.v + "'>Open</button></td></tr>";
+  }
+  h = h + "</tbody></table></div></div>";
+  h = h + "<div class='card'><h2>Shortcuts</h2><div style='display:flex;gap:8px;flex-wrap:wrap'>";
+  h = h + "<button data-go2='periods'>Periods</button><button data-go2='curriculum'>Curriculum</button><button data-go2='conflicts'>Conflicts</button><button data-go2='export'>PDF, Excel, CSV</button><button data-go2='school'>Settings</button><button class='ghost' id='btnLogout'>Sign out</button>";
+  h = h + "</div></div>";
+  $("main").innerHTML = h;
+  var gs = $("main").querySelectorAll("[data-go2]");
+  for (var g = 0; g < gs.length; g++) {
+    gs[g].setAttribute("role", "button");
+    gs[g].setAttribute("tabindex", "0");
+    gs[g].setAttribute("title", "Open");
+    gs[g].onclick = function(){ go(this.getAttribute("data-go2")); };
+    gs[g].onkeydown = function(ev){ if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(this.getAttribute("data-go2")); } };
+  }
+  $("btnQuickGen").onclick = function(){ go("generate"); };
+  $("btnQuickView").onclick = function(){ go("timetable"); };
+  if ($("btnQuickSet")) { $("btnQuickSet").onclick = function(){ go("settings"); }; }
+  $("btnLogout").onclick = logout;
+}
+function classesView(){
+  var right = isWrite() ? "<button class='primary' id='btnNew'>+ Add class</button>" : "";
+  var h = head("Classes & sections", "Tap a class to manage its sections", right);
+  for (var i = 0; i < (S.classes || []).length; i++) {
+    var c = S.classes[i];
+    var secs = [];
+    for (var j = 0; j < (S.sections || []).length; j++) {
+      if (S.sections[j].class_id === c.id) { secs.push(S.sections[j]); }
+    }
+    h = h + "<div class='card'><h2>" + esc(c.name) + "<span>" + esc(c.code || "") + " - " + secs.length + " section(s)</span></h2>";
+    if (secs.length === 0) {
+      h = h + "<div class='empty'>No sections yet.</div>";
+    } else {
+      h = h + "<div class='tblwrap'><table><thead><tr><th>Section</th><th>Students</th><th>Home room</th><th>Periods set</th><th></th></tr></thead><tbody>";
+      for (var s = 0; s < secs.length; s++) {
+        var sec = secs[s];
+        var n = 0;
+        var tb = S.timetables[sec.id] || {};
+        for (var k in tb) { n = n + 1; }
+        h = h + "<tr><td><b>" + esc(sec.name) + "</b></td><td class='muted'>" + esc(sec.students || "") + "</td><td class='muted'>" + esc(nameOf(S.rooms, sec.room_id)) + "</td><td class='muted'>" + n + "</td><td style='text-align:right'>";
+        h = h + "<button class='sm' data-tt='" + esc(sec.id) + "'>Timetable</button>";
+        if (isWrite()) {
+          h = h + " <button class='sm' data-sec-edit='" + esc(sec.id) + "'>Edit</button> <button class='sm bad' data-sec-del='" + esc(sec.id) + "'>Del</button>";
+        }
+        h = h + "</td></tr>";
+      }
+      h = h + "</tbody></table></div>";
+    }
+    h = h + "<div style='margin-top:10px;display:flex;gap:8px;flex-wrap:wrap'>";
+    if (isWrite()) {
+      h = h + "<button class='sm' data-addsec='" + esc(c.id) + "'>+ Add section</button>";
+      h = h + "<button class='sm' data-cls-cur='" + esc(c.id) + "'>Curriculum</button>";
+      h = h + "<button class='sm' data-cls-edit='" + esc(c.id) + "'>Edit class</button> <button class='sm bad' data-cls-del='" + esc(c.id) + "'>Delete class</button>";
+    }
+    h = h + "</div></div>";
+  }
+  if ((S.classes || []).length === 0) {
+    h = h + "<div class='card'><div class='empty'>No classes yet. " + (isWrite() ? "Use + Add class." : "") + "</div></div>";
+  }
+  $("main").innerHTML = h;
+  if ($("btnNew")) { $("btnNew").onclick = function(){ saveEntity("classes", null); }; }
+  bindAll();
+  var adds = $("main").querySelectorAll("[data-addsec]");
+  for (var a = 0; a < adds.length; a++) {
+    adds[a].onclick = function(){
+      var cid = this.getAttribute("data-addsec");
+      modal("New section", entForm("sections", {class_id: cid}), function(done){
+        var data = readForm();
+        data.class_id = cid;
+        api("entity.create", {entity: "sections", data: data}).then(function(){
+          closeModal(); toast("Section added", "ok");
+          refresh().then(function(){ go("classes"); });
+        }).catch(function(e){ done(); fail(e); });
+      });
+    };
+  }
+  var ces = $("main").querySelectorAll("[data-cls-edit]");
+  for (var ce = 0; ce < ces.length; ce++) {
+    ces[ce].onclick = function(){ saveEntity("classes", tById(S.classes, this.getAttribute("data-cls-edit"))); };
+  }
+  var cds = $("main").querySelectorAll("[data-cls-del]");
+  for (var cd = 0; cd < cds.length; cd++) {
+    cds[cd].onclick = function(){ delEntity("classes", tById(S.classes, this.getAttribute("data-cls-del"))); };
+  }
+  var ses = $("main").querySelectorAll("[data-sec-edit]");
+  for (var se = 0; se < ses.length; se++) {
+    ses[se].onclick = function(){ saveEntity("sections", tById(S.sections, this.getAttribute("data-sec-edit"))); };
+  }
+  var sds = $("main").querySelectorAll("[data-sec-del]");
+  for (var sd = 0; sd < sds.length; sd++) {
+    sds[sd].onclick = function(){ delEntity("sections", tById(S.sections, this.getAttribute("data-sec-del"))); };
+  }
+  var ccs = $("main").querySelectorAll("[data-cls-cur]");
+  for (var cc = 0; cc < ccs.length; cc++) {
+    ccs[cc].onclick = function(){ CURR_CLASS = this.getAttribute("data-cls-cur"); go("curriculum"); };
+  }
+  var tts = $("main").querySelectorAll("[data-tt]");
+  for (var tt = 0; tt < tts.length; tt++) {
+    tts[tt].onclick = function(){ TT_SECTION = this.getAttribute("data-tt"); go("timetable"); };
+  }
+}
+function bindAll(){}
+
+
+var CURR_CLASS = "";
+var CURR_LOADED = "";
+var TT_SECTION = "";
+function settingsView(){
+  var rd = isWrite() ? "" : " disabled";
+  var h = tabsHTML("school") + head("Settings", "School name, logo, school week and periods");
+  h = h + "<div class='card'><h2>School name and logo</h2>";
+  h = h + "<div style='display:flex;align-items:center;gap:12px;margin-bottom:12px'>" + logoSVG("big") + "<div class='muted' style='font-size:12.5px'>This logo appears in the app header and on every page.</div></div>";
+  h = h + "<label class='f'><span>School name</span><input id='scName' value='" + esc(S.school.name) + "' maxlength='80'" + rd + "></label>";
+  h = h + "<label class='f'><span>Logo symbol (used when no picture is uploaded)</span><input id='scEmoji' value='" + esc(S.school.logo_emoji || "") + "' placeholder='e.g. an emoji' maxlength='4'" + rd + "></label>";
+  if (isWrite()) {
+    h = h + "<label class='f'><span>Logo picture (PNG or JPG, square, under 40 KB)</span><input type='file' id='scLogoFile' accept='image/png,image/jpeg,image/webp'></label>";
+    if (S.school.logo_img) { h = h + "<button class='sm bad' id='btnLogoClear'>Remove logo picture</button>"; }
+  }
+  h = h + "</div>";
+  h = h + "<div class='card'><h2>School days<span>one per line, in order</span></h2><textarea id='scDays' rows='6'" + rd + ">" + esc((S.school.days || []).join("\n")) + "</textarea></div>";
+  h = h + "<div class='card'><h2>Periods<span>name, start, end</span></h2><div id='perBox'></div>";
+  if (isWrite()) { h = h + "<button class='sm' id='btnAddPer'>+ Add period</button>"; }
+  h = h + "</div>";
+  if (isWrite()) { h = h + "<button class='primary' id='btnSaveSc'>Save settings</button>"; }
+  $("main").innerHTML = h;
+  PERIODS = [];
+  drawPeriods();
+  if ($("btnAddPer")) {
+    $("btnAddPer").onclick = function(){
+      PERIODS.push({name: "P" + (PERIODS.length + 1), start: "", end: ""});
+      drawPeriods();
+    };
+  }
+  if ($("scLogoFile")) {
+    $("scLogoFile").onchange = function(){
+      var f = this.files && this.files[0];
+      if (!f) { return; }
+      if (f.size > 3000000) { toast("That picture is too large. Choose a small square picture.", "err"); this.value = ""; return; }
+      var r = new FileReader();
+      r.onload = function(){
+        var img = new Image();
+        img.onerror = function(){ toast("That file is not a picture I can read.", "err"); };
+        img.onload = function(){
+          try {
+            var c = document.createElement("canvas");
+            c.width = 96; c.height = 96;
+            var g = c.getContext("2d");
+            var side = Math.min(img.width, img.height);
+            g.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, 96, 96);
+            LOGO_IMG = c.toDataURL("image/jpeg", 0.72);
+            toast("Logo ready - press Save settings", "ok");
+          } catch (e) { toast("Could not read that picture.", "err"); }
+        };
+        img.src = r.result;
+      };
+      r.readAsDataURL(f);
+    };
+  }
+  if ($("btnLogoClear")) {
+    $("btnLogoClear").onclick = function(){ LOGO_IMG = ""; toast("The logo picture will be removed - press Save settings", "ok"); };
+  }
+  if ($("btnSaveSc")) {
+    $("btnSaveSc").onclick = function(){
+      var nm = $("scName").value.trim();
+      if (nm === "") { toast("Enter the school name.", "err"); $("scName").focus(); return; }
+      var days = $("scDays").value.split("\n");
+      var clean = [];
+      for (var i = 0; i < days.length; i++) { if (days[i].trim() !== "") { clean.push(days[i].trim()); } }
+      if (clean.length === 0) { toast("List at least one school day.", "err"); return; }
+      if (clean.length > 7) { toast("A week has 7 days at most.", "err"); return; }
+      collectPeriods();
+      if (PERIODS.length === 0) { toast("Add at least one period.", "err"); return; }
+      if (PERIODS.length > 14) { toast("That is too many periods for one day (14 at most).", "err"); return; }
+      for (var p = 0; p < PERIODS.length; p++) {
+        if (!PERIODS[p].name) { toast("Period " + (p + 1) + " needs a name.", "err"); return; }
+      }
+      var school = {name: nm, days: clean, periods: PERIODS, logo_emoji: $("scEmoji").value.trim()};
+      if (LOGO_IMG !== null) { school.logo_img = LOGO_IMG; }
+      splash(true);
+      api("settings.save", {school: school}).then(function(d){
+        splash(false);
+        S.school = d.school;
+        LOGO_IMG = null;
+        toast("Settings saved", "ok");
+        refresh().then(function(){ go("settings"); });
+      }).catch(function(e){ splash(false); fail(e); });
+    };
+  }
+}
+var PERIODS = [];
+var LOGO_IMG = null;
+function drawPeriods(){
+  if ($("perBox") && PERIODS.length === 0) {
+    PERIODS = [];
+    var src = S.school.periods || [];
+    for (var i = 0; i < src.length; i++) { PERIODS.push({name: src[i].name, start: src[i].start, end: src[i].end}); }
+  }
+  var rd = isWrite() ? "" : " disabled";
+  var h = "";
+  for (var j = 0; j < PERIODS.length; j++) {
+    h = h + "<div style='display:grid;grid-template-columns:1fr 1fr 1fr 38px;gap:7px;margin-bottom:8px'>";
+    h = h + "<input data-pn='" + j + "' value='" + esc(PERIODS[j].name) + "' placeholder='Name'" + rd + ">";
+    h = h + "<input data-ps='" + j + "' value='" + esc(PERIODS[j].start) + "' placeholder='08:00'" + rd + ">";
+    h = h + "<input data-pe='" + j + "' value='" + esc(PERIODS[j].end) + "' placeholder='08:45'" + rd + ">";
+    h = h + "<button class='sm bad' data-px='" + j + "'" + rd + ">&times;</button>";
+    h = h + "</div>";
+  }
+  if ($("perBox")) { $("perBox").innerHTML = h; }
+  if ($("perBox")) {
+    var xs = $("perBox").querySelectorAll("[data-px]");
+    for (var k = 0; k < xs.length; k++) {
+      xs[k].onclick = function(){
+        var idx = parseInt(this.getAttribute("data-px"), 10);
+        var ps2 = collectPeriods();
+        PERIODS = [];
+        for (var m = 0; m < ps2.length; m++) { if (m !== idx) { PERIODS.push(ps2[m]); } }
+        if (PERIODS.length === 0) { PERIODS = [{name: "P1", start: "", end: ""}]; }
+        drawPeriods();
+      };
+    }
+  }
+}
+function collectPeriods(){
+  var ps = $("perBox").querySelectorAll("[data-pn]");
+  var out = [];
+  for (var i = 0; i < ps.length; i++) {
+    out.push({
+      name: $("perBox").querySelector("[data-pn='" + i + "']").value.trim(),
+      start: $("perBox").querySelector("[data-ps='" + i + "']").value.trim(),
+      end: $("perBox").querySelector("[data-pe='" + i + "']").value.trim()
+    });
+  }
+  PERIODS = out;
+  return out;
+}
+function currView(){
+  if ((S.classes || []).length === 0) {
+    $("main").innerHTML = head("Curriculum", "Periods per week for each class") + "<div class='card'><div class='empty'>Add a class first.</div></div>";
+    return;
+  }
+  if ((S.sections || []).length === 0) {
+    $("main").innerHTML = head("Curriculum", "Periods per week for each class") + "<div class='card'><div class='empty'>Add a section to a class first - timetables are built per section.</div></div>";
+    return;
+  }
+  if (!CURR_CLASS || !tById(S.classes, CURR_CLASS)) { CURR_CLASS = S.classes[0].id; }
+  if (CURR_LOADED !== CURR_CLASS) { CURR_LINES = []; CURR_LOADED = CURR_CLASS; }
+  var weekly = (S.school.days || []).length * (S.school.periods || []).length;
+  var h = head("Curriculum", "How many periods a week each subject needs");
+  h = h + "<div class='card'><h2>Class</h2><select id='currClass'>";
+  for (var i = 0; i < S.classes.length; i++) {
+    h = h + "<option value='" + esc(S.classes[i].id) + "'" + (S.classes[i].id === CURR_CLASS ? " selected" : "") + ">" + esc(S.classes[i].name) + "</option>";
+  }
+  h = h + "</select>";
+  h = h + "<div class='note' style='margin-top:12px'>The school week has " + weekly + " periods (" + (S.school.days || []).length + " days x " + (S.school.periods || []).length + "). Sections of this class share this curriculum.</div>";
+  h = h + "<div id='currLines'></div>";
+  if (isWrite()) {
+    h = h + "<div style='display:flex;gap:8px;flex-wrap:wrap;margin-top:10px'>";
+    h = h + "<button class='sm' id='btnAddLine'>+ Add subject</button>";
+    h = h + "<button class='primary' id='btnSaveCur'>Save curriculum</button>";
+    h = h + "</div>";
+  }
+  h = h + "</div>";
+  $("main").innerHTML = h;
+  drawCurrLines();
+  $("currClass").onchange = function(){ CURR_CLASS = this.value; go("curriculum"); };
+  if ($("btnAddLine")) { $("btnAddLine").onclick = function(){ CURR_LINES.push({subject_id: "", teacher_id: "", room_id: "", periods_per_week: 1}); drawCurrLines(); }; }
+  if ($("btnSaveCur")) {
+    $("btnSaveCur").onclick = function(){
+      collectCurr();
+      api("curriculum.save", {class_id: CURR_CLASS, items: CURR_LINES}).then(function(){
+        toast("Curriculum saved", "ok");
+        refresh().then(function(){ go("curriculum"); });
+      }).catch(fail);
+    };
+  }
+}
+var CURR_LINES = [];
+function drawCurrLines(){
+  if (CURR_LINES.length === 0) {
+    var src = S.curriculum[CURR_CLASS] || [];
+    for (var i = 0; i < src.length; i++) {
+      CURR_LINES.push({subject_id: src[i].subject_id, teacher_id: src[i].teacher_id, room_id: src[i].room_id, periods_per_week: src[i].periods_per_week});
+    }
+  }
+  var rd = isWrite() ? "" : " disabled";
+  var h = "";
+  if (CURR_LINES.length === 0) { h = "<div class='empty'>No subjects in the curriculum yet.</div>"; }
+  for (var j = 0; j < CURR_LINES.length; j++) {
+    var L = CURR_LINES[j];
+    h = h + "<div class='curline'>";
+    h = h + "<select data-cs='" + j + "'" + rd + "><option value=''>- subject -</option>" + optionsFor(S.subjects, L.subject_id) + "</select>";
+    h = h + "<select data-ct='" + j + "'" + rd + "><option value=''>- teacher -</option>" + teachersFor(L.subject_id, L.teacher_id) + "</select>";
+    h = h + "<select data-cr='" + j + "'" + rd + "><option value=''>- room -</option>" + optionsFor(S.rooms, L.room_id) + "</select>";
+    h = h + "<input type='number' min='0' max='60' data-cn='" + j + "' value='" + esc(L.periods_per_week) + "'" + rd + ">";
+    h = h + "<button class='sm bad' data-cx='" + j + "'" + rd + ">&times;</button>";
+    h = h + "</div>";
+  }
+  if ($("currLines")) { $("currLines").innerHTML = h; }
+  var xs = $("currLines").querySelectorAll("[data-cx]");
+  for (var k = 0; k < xs.length; k++) {
+    xs[k].onclick = function(){ collectCurr(); CURR_LINES.splice(parseInt(this.getAttribute("data-cx"), 10), 1); drawCurrLines(); };
+  }
+  var ss = $("currLines").querySelectorAll("[data-cs]");
+  for (var s = 0; s < ss.length; s++) {
+    ss[s].onchange = function(){
+      var idx = parseInt(this.getAttribute("data-cs"), 10);
+      collectCurr();
+      CURR_LINES[idx].subject_id = this.value;
+      CURR_LINES[idx].teacher_id = "";
+      drawCurrLines();
+    };
+  }
+}
+function optionsFor(list, val){
+  var h = "";
+  for (var i = 0; i < list.length; i++) {
+    h = h + "<option value='" + esc(list[i].id) + "'" + (list[i].id === val ? " selected" : "") + ">" + esc(list[i].name) + "</option>";
+  }
+  return h;
+}
+function teachersFor(subjectId, val){
+  var h = "";
+  for (var i = 0; i < (S.teachers || []).length; i++) {
+    var t = S.teachers[i];
+    var ids = t.subject_ids || [];
+    if (subjectId && ids.length > 0 && ids.indexOf(subjectId) < 0) { continue; }
+    h = h + "<option value='" + esc(t.id) + "'" + (t.id === val ? " selected" : "") + ">" + esc(t.name) + "</option>";
+  }
+  return h;
+}
+function collectCurr(){
+  if (!$("currLines")) { return CURR_LINES; }
+  for (var i = 0; i < CURR_LINES.length; i++) {
+    var a = $("currLines").querySelector("[data-cs='" + i + "']");
+    var b = $("currLines").querySelector("[data-ct='" + i + "']");
+    var c = $("currLines").querySelector("[data-cr='" + i + "']");
+    var d = $("currLines").querySelector("[data-cn='" + i + "']");
+    if (a) { CURR_LINES[i].subject_id = a.value; }
+    if (b) { CURR_LINES[i].teacher_id = b.value; }
+    if (c) { CURR_LINES[i].room_id = c.value; }
+    if (d) { CURR_LINES[i].periods_per_week = parseInt(d.value || "0", 10); }
+  }
+  return CURR_LINES;
+}
+var PD = [];
+function periodsView(){
+  var rd = isWrite() ? "" : " disabled";
+  var nd = (S.school.days || []).length;
+  var np = (S.school.periods || []).length;
+  var h = head("Periods", "School days and the periods of one day");
+  h = h + "<div class='card'><h2>School week<span>" + nd + " days x " + np + " periods = " + (nd * np) + " slots per section</span></h2>";
+  h = h + "<label class='f'><span>School days, one per line, in order</span><textarea id='pdDays' rows='7'" + rd + ">" + esc((S.school.days || []).join("\n")) + "</textarea></label>";
+  h = h + "<div class='note'>If you remove a day or a period, lessons that no longer fit are removed from the saved timetables when you save.</div></div>";
+  h = h + "<div class='card'><h2>Periods of one day</h2><div id='pdBox'></div>";
+  if (isWrite()) { h = h + "<button class='sm' id='pdAdd'>+ Add period</button>"; }
+  h = h + "</div>";
+  if (isWrite()) { h = h + "<button class='primary' id='pdSave'>Save periods</button>"; }
+  $("main").innerHTML = h;
+  PD = [];
+  for (var i = 0; i < np; i++) {
+    PD.push({name: S.school.periods[i].name || "", start: S.school.periods[i].start || "", end: S.school.periods[i].end || ""});
+  }
+  if (PD.length === 0) { PD.push({name: "P1", start: "", end: ""}); }
+  drawPD();
+  if ($("pdAdd")) {
+    $("pdAdd").onclick = function(){
+      collectPD();
+      if (PD.length >= 14) { toast("A day has 14 periods at most.", "err"); return; }
+      PD.push({name: "P" + (PD.length + 1), start: "", end: ""});
+      drawPD();
+    };
+  }
+  if ($("pdSave")) { $("pdSave").onclick = savePD; }
+}
+function drawPD(){
+  var rd = isWrite() ? "" : " disabled";
+  var h = "<div style='display:grid;grid-template-columns:1.3fr 1fr 1fr 38px;gap:7px'><span class='muted' style='font-size:11.5px'>NAME</span><span class='muted' style='font-size:11.5px'>START</span><span class='muted' style='font-size:11.5px'>END</span><span></span></div>";
+  for (var i = 0; i < PD.length; i++) {
+    h = h + "<div style='display:grid;grid-template-columns:1.3fr 1fr 1fr 38px;gap:7px;margin-top:7px'>";
+    h = h + "<input data-pdn='" + i + "' value='" + esc(PD[i].name) + "' placeholder='P1' maxlength='12'" + rd + ">";
+    h = h + "<input data-pds='" + i + "' value='" + esc(PD[i].start) + "' placeholder='08:00' maxlength='5'" + rd + ">";
+    h = h + "<input data-pde='" + i + "' value='" + esc(PD[i].end) + "' placeholder='08:45' maxlength='5'" + rd + ">";
+    h = h + "<button class='sm bad' data-pdx='" + i + "'" + rd + " title='Remove this period'>&times;</button>";
+    h = h + "</div>";
+  }
+  $("pdBox").innerHTML = h;
+  var xs = $("pdBox").querySelectorAll("[data-pdx]");
+  for (var k = 0; k < xs.length; k++) {
+    xs[k].onclick = function(){
+      var idx = parseInt(this.getAttribute("data-pdx"), 10);
+      collectPD();
+      if (PD.length <= 1) { toast("Keep at least one period.", "err"); return; }
+      var keep = [];
+      for (var m = 0; m < PD.length; m++) { if (m !== idx) { keep.push(PD[m]); } }
+      PD = keep;
+      drawPD();
+    };
+  }
+}
+function collectPD(){
+  var ns = $("pdBox").querySelectorAll("[data-pdn]");
+  var out = [];
+  for (var i = 0; i < ns.length; i++) {
+    out.push({
+      name: $("pdBox").querySelector("[data-pdn='" + i + "']").value.trim(),
+      start: $("pdBox").querySelector("[data-pds='" + i + "']").value.trim(),
+      end: $("pdBox").querySelector("[data-pde='" + i + "']").value.trim()
+    });
+  }
+  PD = out;
+  return out;
+}
+function badTime(v){
+  if (v === "") { return false; }
+  if (!/^[0-9]{1,2}:[0-9]{2}$/.test(v)) { return true; }
+  var parts = v.split(":");
+  var hh = parseInt(parts[0], 10);
+  var mm = parseInt(parts[1], 10);
+  return hh > 23 || mm > 59;
+}
+function savePD(){
+  var days = $("pdDays").value.split("\n");
+  var clean = [];
+  for (var i = 0; i < days.length; i++) { if (days[i].trim() !== "") { clean.push(days[i].trim()); } }
+  if (clean.length === 0) { toast("List at least one school day.", "err"); return; }
+  if (clean.length > 7) { toast("A week has 7 days at most.", "err"); return; }
+  collectPD();
+  if (PD.length === 0) { toast("Add at least one period.", "err"); return; }
+  for (var p = 0; p < PD.length; p++) {
+    if (PD[p].name === "") { toast("Period " + (p + 1) + " needs a name.", "err"); return; }
+    if (badTime(PD[p].start) || badTime(PD[p].end)) { toast("Period " + PD[p].name + ": use times like 08:45.", "err"); return; }
+  }
+  var school = {name: S.school.name || "My School", days: clean, periods: PD, logo_emoji: S.school.logo_emoji || ""};
+  splash(true);
+  api("settings.save", {school: school}).then(function(d){
+    splash(false);
+    S.school = d.school;
+    toast("Periods saved", "ok");
+    refresh().then(function(){ go("periods"); });
+  }).catch(function(e){ splash(false); fail(e); });
+}
+
+
+function genView(){
+  var h = head("Generate timetable", "Automatic placement with teacher and room conflict checks");
+  var weekly = (S.school.days || []).length * (S.school.periods || []).length;
+  h = h + "<div class='note'>Every section of the chosen classes is filled from its curriculum. A subject is not repeated twice in the same day, teachers are never double booked, and a teacher's daily limit and unavailable slots are respected.</div>";
+  if ((S.sections || []).length === 0) {
+    $("main").innerHTML = h + "<div class='card'><div class='empty'>Create classes and sections first.</div></div>";
+    return;
+  }
+  h = h + "<div class='card'><h2>Classes to generate<span>" + weekly + " periods per week</span></h2>";
+  for (var i = 0; i < (S.classes || []).length; i++) {
+    var c = S.classes[i];
+    var secs = [];
+    for (var j = 0; j < S.sections.length; j++) { if (S.sections[j].class_id === c.id) { secs.push(S.sections[j]); } }
+    h = h + "<label class='chk'><input type='checkbox' data-gen-class='" + esc(c.id) + "' checked><span><b>" + esc(c.name) + "</b> <span class='muted'>" + secs.length + " section(s)</span></span></label>";
+  }
+  h = h + "<label class='chk' style='margin-top:10px'><input type='checkbox' id='optRooms' checked><span>Assign a free classroom when the curriculum names none</span></label>";
+  h = h + "<label class='chk'><input type='checkbox' id='optKeep'><span>Keep the entries I already placed by hand</span></label>";
+  h = h + "<div style='margin-top:12px;display:flex;gap:8px;flex-wrap:wrap'>";
+  h = h + "<button class='primary' id='btnGen'>Generate now</button>";
+  h = h + "<button class='ghost' id='btnClear'>Clear chosen timetables</button>";
+  h = h + "</div></div>";
+  h = h + "<div id='genOut'></div>";
+  $("main").innerHTML = h;
+  $("btnGen").onclick = function(){
+    var ids = chosenSections();
+    if (ids.length === 0) { toast("Choose at least one class.", "err"); return; }
+    $("btnGen").disabled = true;
+    $("genOut").innerHTML = "<div class='card'><div class='empty'>Generating...</div></div>";
+    api("timetable.generate", {section_ids: ids, options: {assign_rooms: $("optRooms").checked, keep_existing: $("optKeep").checked}})
+      .then(function(d){
+        $("btnGen").disabled = false;
+        var rep = d.report || [];
+        var placed = 0;
+        var total = 0;
+        var unplaced = 0;
+        for (var i = 0; i < rep.length; i++) {
+          placed = placed + rep[i].placed;
+          total = total + rep[i].total;
+          unplaced = unplaced + (rep[i].unplaced || []).length;
+        }
+        var out = "<div class='card'><h2>Result</h2><div class='kpis'>";
+        out = out + "<div class='kpi ok'><div class='v'>" + placed + "</div><div class='l'>periods placed</div></div>";
+        out = out + "<div class='kpi'><div class='v'>" + total + "</div><div class='l'>periods needed</div></div>";
+        out = out + "<div class='kpi " + (unplaced > 0 ? "bad" : "ok") + "'><div class='v'>" + unplaced + "</div><div class='l'>could not be placed</div></div>";
+        out = out + "</div>";
+        for (var j = 0; j < rep.length; j++) {
+          var r = rep[j];
+          var nm = sectionName(r.section_id);
+          if (r.note) { out = out + "<div class='warnbox'>" + esc(nm) + ": " + esc(r.note) + "</div>"; }
+          if ((r.unplaced || []).length > 0) {
+            var subs = [];
+            for (var k = 0; k < r.unplaced.length; k++) { subs.push(nameOf(S.subjects, r.unplaced[k].subject_id)); }
+            out = out + "<div class='warnbox'>" + esc(nm) + ": " + esc(subs.join(", ")) + " could not be placed (no free slot with the teacher and room free).</div>";
+          }
+        }
+        if (unplaced === 0 && total > 0) { out = out + "<div class='note'>Every requested period was placed without breaking a rule.</div>"; }
+        out = out + "<div style='margin-top:10px'><button class='primary' id='btnGenGo'>Open the timetable</button></div></div>";
+        $("genOut").innerHTML = out;
+        $("btnGenGo").onclick = function(){ go("timetable"); };
+        refresh().then(function(){});
+      }).catch(function(e){ $("btnGen").disabled = false; $("genOut").innerHTML = ""; fail(e); });
+  };
+  $("btnClear").onclick = function(){
+    var ids = chosenSections();
+    if (ids.length === 0) { toast("Choose at least one class.", "err"); return; }
+    modal("Clear timetables", "<div class='errbox'>Remove every period from " + ids.length + " section(s)?</div>", function(done){
+      api("timetable.clear", {section_ids: ids}).then(function(){
+        closeModal(); toast("Cleared", "ok");
+        refresh().then(function(){ go("generate"); });
+      }).catch(function(e){ done(); fail(e); });
+    }, "Clear");
+  };
+}
+function chosenSections(){
+  var ids = [];
+  var cs = $("main").querySelectorAll("[data-gen-class]");
+  for (var i = 0; i < cs.length; i++) {
+    if (!cs[i].checked) { continue; }
+    var cid = cs[i].getAttribute("data-gen-class");
+    for (var j = 0; j < S.sections.length; j++) { if (S.sections[j].class_id === cid) { ids.push(S.sections[j].id); } }
+  }
+  return ids;
+}
+function sectionName(sid){
+  var s = tById(S.sections, sid);
+  if (!s) { return "Section"; }
+  var c = tById(S.classes, s.class_id);
+  return (c ? c.name : "Class") + " - " + s.name;
+}
+function ttView(){
+  if ((S.classes || []).length === 0) {
+    $("main").innerHTML = head("Timetable", "") + "<div class='card'><div class='empty'>Add a class and a section first.</div></div>";
+    return;
+  }
+  if (!TT_SECTION || !tById(S.sections, TT_SECTION)) {
+    if ((S.sections || []).length > 0) { TT_SECTION = S.sections[0].id; }
+  }
+  var h = head("Timetable", "Tap a period to add, change or clear it",
+    isWrite() ? "<button class='sm ghost' id='btnTtGen'>Generate</button>" : "");
+  h = h + "<div class='card'><div class='row'><label class='f'><span>Section</span><select id='ttSec'>";
+  for (var j = 0; j < (S.sections || []).length; j++) {
+    var sec = S.sections[j];
+    h = h + "<option value='" + esc(sec.id) + "'" + (sec.id === TT_SECTION ? " selected" : "") + ">" + esc(sectionName(sec.id)) + "</option>";
+  }
+  h = h + "</select></label>";
+  h = h + "<label class='f'><span>View</span><select id='ttMode'><option value='sec'>This section</option><option value='teacher'>By teacher</option><option value='room'>By classroom</option></select></label></div></div>";
+  h = h + "<div class='card' id='gridCard'></div>";
+  $("main").innerHTML = h;
+  $("ttSec").onchange = function(){ TT_SECTION = this.value; go("timetable"); };
+  $("ttMode").onchange = function(){ TT_MODE = this.value; go("timetable"); };
+  if ($("btnTtGen")) { $("btnTtGen").onclick = function(){ go("generate"); }; }
+  drawGrid();
+}
+var TT_MODE = "sec";
+function cellKey(d, p){ return d + "-" + p; }
+function drawGrid(){
+  var days = S.school.days || [];
+  var periods = S.school.periods || [];
+  var table = {};
+  var title = "";
+  if (TT_MODE === "sec") {
+    table = S.timetables[TT_SECTION] || {};
+    title = sectionName(TT_SECTION);
+  } else {
+    var target = TT_MODE === "teacher" ? (TT_TEACHER || ((S.teachers || [])[0] || {}).id) : (TT_ROOM || ((S.rooms || [])[0] || {}).id);
+    for (var sid in S.timetables) {
+      var t = S.timetables[sid];
+      for (var k in t) {
+        var sl = t[k] || {};
+        var match = TT_MODE === "teacher" ? (sl.teacher_id === target) : (sl.room_id === target);
+        if (match) { table[k] = {subject_id: sl.subject_id, teacher_id: sl.teacher_id, room_id: target, sec: sid}; }
+      }
+    }
+    title = TT_MODE === "teacher" ? ("Teacher: " + nameOf(S.teachers, target)) : ("Room: " + nameOf(S.rooms, target));
+  }
+  var h = "<h2>" + esc(title) + "</h2>";
+  if (TT_MODE !== "sec") {
+    h = h + "<label class='f'><span>Choose</span><select id='ttPick'>";
+    var list = TT_MODE === "teacher" ? (S.teachers || []) : (S.rooms || []);
+    var cur = TT_MODE === "teacher" ? TT_TEACHER : TT_ROOM;
+    for (var i = 0; i < list.length; i++) {
+      h = h + "<option value='" + esc(list[i].id) + "'" + (list[i].id === cur ? " selected" : "") + ">" + esc(list[i].name) + "</option>";
+    }
+    h = h + "</select></label>";
+  }
+  h = h + "<div class='tblwrap'><table class='tt'><thead><tr><th class='dh'>Day</th>";
+  for (var p = 0; p < periods.length; p++) { h = h + "<th>" + esc(periods[p].name) + "</th>"; }
+  h = h + "</tr></thead><tbody>";
+  for (var d = 0; d < days.length; d++) {
+    h = h + "<tr><th class='dh'>" + esc(days[d]) + "</th>";
+    for (var q = 0; q < periods.length; q++) {
+      var key = cellKey(d, q);
+      var cell = table[key] || {};
+      var cls = cell.subject_id ? "slot full" : "slot";
+      h = h + "<td><div class='" + cls + "' data-cell='" + key + "'>";
+      if (cell.subject_id) {
+        h = h + "<b>" + esc(nameOf(S.subjects, cell.subject_id)) + "</b>";
+        var sub = "";
+        if (cell.teacher_id) { sub = nameOf(S.teachers, cell.teacher_id); }
+        if (cell.room_id) { sub = sub + (sub ? " - " : "") + nameOf(S.rooms, cell.room_id); }
+        if (TT_MODE !== "sec" && cell.sec) { sub = sectionName(cell.sec); }
+        h = h + "<small>" + esc(sub) + "</small>";
+      } else {
+        h = h + "<div class='plus'>+</div>";
+      }
+      h = h + "</div></td>";
+    }
+    h = h + "</tr>";
+  }
+  h = h + "</tbody></table></div>";
+  h = h + "<div class='legend'><span><span class='pill ok'>filled</span> lesson placed</span><span>Tap any cell to edit it</span></div>";
+  $("gridCard").innerHTML = h;
+  if ($("ttPick")) {
+    $("ttPick").onchange = function(){
+      if (TT_MODE === "teacher") { TT_TEACHER = this.value; } else { TT_ROOM = this.value; }
+      drawGrid();
+    };
+  }
+  var cells = $("gridCard").querySelectorAll("[data-cell]");
+  for (var c = 0; c < cells.length; c++) {
+    cells[c].onclick = function(){
+      var parts = this.getAttribute("data-cell").split("-");
+      openSlot(parseInt(parts[0], 10), parseInt(parts[1], 10));
+    };
+  }
+}
+var TT_TEACHER = "";
+var TT_ROOM = "";
+function openSlot(d, p){
+  var table = S.timetables[TT_SECTION] || {};
+  var cur = table[cellKey(d, p)] || {};
+  var rd = isWrite() ? "" : " disabled";
+  var h = "<div class='muted' style='margin-bottom:12px'>" + esc((S.school.days || [])[d]) + " - " + esc((S.school.periods || [])[p].name) + " - " + esc(sectionName(TT_SECTION)) + "</div>";
+  h = h + "<label class='f'><span>Subject</span><select id='slSub'" + rd + "><option value=''>- free period -</option>" + optionsFor(S.subjects, cur.subject_id || "") + "</select></label>";
+  h = h + "<label class='f'><span>Teacher</span><select id='slTch'" + rd + "><option value=''>- none -</option>" + optionsFor(S.teachers, cur.teacher_id || "") + "</select></label>";
+  h = h + "<label class='f'><span>Classroom</span><select id='slRoom'" + rd + "><option value=''>- none -</option>" + optionsFor(S.rooms, cur.room_id || "") + "</select></label>";
+  h = h + "<div id='slWarn'></div>";
+  if (!isWrite()) {
+    modal("This period", h, function(){ closeModal(); }, "Close");
+    return;
+  }
+  modal("Edit period", h, function(done){
+    var sid = $("slSub").value;
+    var extra = {section_id: TT_SECTION, day: d, period: p, subject_id: sid, teacher_id: $("slTch").value, room_id: $("slRoom").value};
+    api("slot.set", extra).then(function(res){
+      var w = res.warnings || [];
+      closeModal();
+      if (sid === "") { toast("Period cleared", "ok"); }
+      else if (w.length > 0) { toast(w[0], "err"); }
+      else { toast("Saved", "ok"); }
+      refresh().then(function(){ go("timetable"); });
+    }).catch(function(e){ done(); fail(e); });
+  });
+}
+function confView(){
+  var h = tabsHTML("conf") + head("Conflicts", "Teacher and classroom clashes across all sections");
+  if (S.conflicts.length === 0) {
+    h = h + "<div class='card'><div class='kpi ok'><div class='v'>0</div><div class='l'>No conflicts found</div></div></div>";
+  } else {
+    h = h + "<div class='card'><h2>" + S.conflicts.length + " finding(s)</h2><div class='tblwrap'><table><thead><tr><th>Type</th><th>When</th><th>Detail</th></tr></thead><tbody>";
+    for (var i = 0; i < S.conflicts.length; i++) {
+      var c = S.conflicts[i];
+      var parts = String(c.slot).split("-");
+      var when = "-";
+      if (parts.length === 2) {
+        when = ((S.school.days || [])[parseInt(parts[0], 10)] || "?") + " " + (((S.school.periods || [])[parseInt(parts[1], 10)] || {}).name || "?");
+      }
+      var detail = "";
+      if (c.type === "teacher") { detail = nameOf(S.teachers, c.teacher_id) + " in " + sectionName(c.a) + " and " + sectionName(c.b); }
+      else if (c.type === "room") { detail = nameOf(S.rooms, c.room_id) + " used by " + sectionName(c.a) + " and " + sectionName(c.b); }
+      else if (c.type === "unavailable") { detail = nameOf(S.teachers, c.teacher_id) + " is marked unavailable (" + sectionName(c.a) + ")"; }
+      else { detail = nameOf(S.teachers, c.teacher_id) + " is over the daily limit of " + esc(c.b) + " (" + sectionName(c.a) + ")"; }
+      h = h + "<tr><td><span class='pill bad'>" + esc(c.type) + "</span></td><td>" + esc(when) + "</td><td>" + esc(detail) + "</td></tr>";
+    }
+    h = h + "</tbody></table></div></div>";
+  }
+  $("main").innerHTML = h;
+}
+
+
+function expView(){
+  var h = head("Export", "PDF, Excel and CSV files built from the saved timetable");
+  h = h + "<div class='card'><h2>Sections to include</h2>";
+  h = h + "<label class='chk'><input type='checkbox' id='expAll' checked><span><b>All sections</b></span></label>";
+  for (var i = 0; i < (S.sections || []).length; i++) {
+    h = h + "<label class='chk'><input type='checkbox' data-exp='" + esc(S.sections[i].id) + "' checked><span>" + esc(sectionName(S.sections[i].id)) + "</span></label>";
+  }
+  h = h + "<div style='margin-top:12px;display:flex;gap:8px;flex-wrap:wrap'>";
+  h = h + "<button class='primary' data-exp-fmt='pdf'>Download PDF</button>";
+  h = h + "<button data-exp-fmt='excel'>Download Excel</button>";
+  h = h + "<button data-exp-fmt='csv'>Download CSV</button>";
+  h = h + "</div><div id='expOut' style='margin-top:12px'></div></div>";
+  h = h + "<div class='card'><h2>Email the files instead</h2><div class='muted' style='font-size:13px'>Ask the bot for the files with the command /export and it sends them in Telegram.</div></div>";
+  $("main").innerHTML = h;
+  $("expAll").onchange = function(){
+    var boxes = $("main").querySelectorAll("[data-exp]");
+    for (var i = 0; i < boxes.length; i++) { boxes[i].checked = this.checked; }
+  };
+  var btns = $("main").querySelectorAll("[data-exp-fmt]");
+  for (var b = 0; b < btns.length; b++) {
+    btns[b].onclick = function(){ doExport(this.getAttribute("data-exp-fmt")); };
+  }
+}
+function doExport(fmt){
+  var ids = [];
+  var boxes = $("main").querySelectorAll("[data-exp]");
+  for (var i = 0; i < boxes.length; i++) { if (boxes[i].checked) { ids.push(boxes[i].getAttribute("data-exp")); } }
+  if (ids.length === 0) { toast("Choose at least one section.", "err"); return; }
+  $("expOut").innerHTML = "<div class='muted'>Building the file...</div>";
+  api("export." + fmt, {section_ids: ids}).then(function(d){
+    var content = d.content || "";
+    var mime = d.mime || "text/plain";
+    if (d.encoding === "base64") {
+      var bin = atob(content);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) { bytes[i] = bin.charCodeAt(i); }
+      saveBlob(new Blob([bytes], {type: mime}), d.filename);
+    } else {
+      saveBlob(new Blob([content], {type: mime}), d.filename);
+    }
+    $("expOut").innerHTML = "<div class='note'>Saved " + esc(d.filename) + " (" + Math.round(content.length / 1024) + " KB). Check your downloads.</div>";
+  }).catch(function(e){ $("expOut").innerHTML = ""; fail(e); });
+}
+function saveBlob(blob, filename){
+  if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+    window.navigator.msSaveOrOpenBlob(blob, filename);
+    return;
+  }
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+    try { window.Telegram.WebApp.HapticFeedback.notificationOccurred("success"); } catch (e) {}
+  }
+}
+function admView(){
+  var h = tabsHTML("adm") + head("Administrators", "Who can open this Mini App and what they may do",
+    isWrite() && isOwner() ? "<button class='primary' id='btnNewAdm'>+ Add administrator</button>" : "");
+  h = h + "<div class='card'><div class='note'>Roles: <b>owner</b> can do everything including administrators. <b>admin</b> can edit school data and timetables. <b>viewer</b> can only look and export.</div>";
+  h = h + "<div class='tblwrap'><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th></th></tr></thead><tbody>";
+  for (var i = 0; i < (S.admins || []).length; i++) {
+    var a = S.admins[i];
+    h = h + "<tr><td><b>" + esc(a.name) + "</b></td><td class='muted'>" + esc(a.username) + "</td><td><span class='pill " + esc(a.role) + "'>" + esc(a.role) + "</span></td><td style='text-align:right'>";
+    if (isOwner()) {
+      h = h + "<button class='sm' data-adm-role='" + esc(a.id) + "'>Role</button> <button class='sm' data-adm-pw='" + esc(a.id) + "'>Password</button>";
+      if (a.id !== (S.me || {}).id) { h = h + " <button class='sm bad' data-adm-del='" + esc(a.id) + "'>Delete</button>"; }
+    }
+    h = h + "</td></tr>";
+  }
+  h = h + "</tbody></table></div></div>";
+  $("main").innerHTML = h;
+  if ($("btnNewAdm")) {
+    $("btnNewAdm").onclick = function(){
+      var body = "<label class='f'><span>Name</span><input id='adName'></label><label class='f'><span>Username</span><input id='adUser'></label><label class='f'><span>Password (6+ characters)</span><input id='adPass' type='password'></label><label class='f'><span>Role</span><select id='adRole'><option value='viewer'>viewer</option><option value='admin'>admin</option><option value='owner'>owner</option></select></label>";
+      modal("New administrator", body, function(done){
+        api("admin.create", {username: $("adUser").value.trim(), password: $("adPass").value, name: $("adName").value.trim(), role: $("adRole").value}).then(function(){
+          closeModal(); toast("Administrator added", "ok");
+          refresh().then(function(){ go("admins"); });
+        }).catch(function(e){ done(); fail(e); });
+      });
+    };
+  }
+  var rs = $("main").querySelectorAll("[data-adm-role]");
+  for (var r = 0; r < rs.length; r++) {
+    rs[r].onclick = function(){
+      var id = this.getAttribute("data-adm-role");
+      var a = tById(S.admins, id);
+      var body = "<label class='f'><span>Role</span><select id='rlRole'><option value='viewer'" + (a.role === "viewer" ? " selected" : "") + ">viewer</option><option value='admin'" + (a.role === "admin" ? " selected" : "") + ">admin</option><option value='owner'" + (a.role === "owner" ? " selected" : "") + ">owner</option></select></label>";
+      modal("Role of " + a.name, body, function(done){
+        api("admin.update", {id: id, role: $("rlRole").value}).then(function(){
+          closeModal(); toast("Role changed", "ok");
+          refresh().then(function(){ go("admins"); });
+        }).catch(function(e){ done(); fail(e); });
+      });
+    };
+  }
+  var ps = $("main").querySelectorAll("[data-adm-pw]");
+  for (var p = 0; p < ps.length; p++) {
+    ps[p].onclick = function(){
+      var id = this.getAttribute("data-adm-pw");
+      modal("Set a new password", "<label class='f'><span>New password (6+ characters)</span><input id='pwNew' type='password'></label>", function(done){
+        api("admin.update", {id: id, password: $("pwNew").value}).then(function(){
+          closeModal(); toast("Password changed - that user must sign in again", "ok");
+          refresh().then(function(){ go("admins"); });
+        }).catch(function(e){ done(); fail(e); });
+      });
+    };
+  }
+  var ds = $("main").querySelectorAll("[data-adm-del]");
+  for (var d = 0; d < ds.length; d++) {
+    ds[d].onclick = function(){
+      var id = this.getAttribute("data-adm-del");
+      modal("Delete administrator", "<div class='errbox'>This account can no longer open the app.</div>", function(done){
+        api("admin.delete", {id: id}).then(function(){
+          closeModal(); toast("Deleted", "ok");
+          refresh().then(function(){ go("admins"); });
+        }).catch(function(e){ done(); fail(e); });
+      }, "Delete");
+    };
+  }
+}
+document.addEventListener("DOMContentLoaded", function(){
+  $("btnAdv").onclick = function(){
+    var b = $("advBox");
+    b.style.display = b.style.display === "none" ? "block" : "none";
+  };
+  $("btnApiSave").onclick = function(){
+    API = $("inApi").value.trim();
+    localStorage.setItem("tt_api", API);
+    toast("Endpoint saved", "ok");
+    boot();
+  };
+  if (window.Telegram && window.Telegram.WebApp) {
+    try {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+      window.Telegram.WebApp.setHeaderColor("#0f1420");
+    } catch (e) {}
+  }
+  boot();
+});
+</script>
+</body>
+</html>
